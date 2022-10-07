@@ -1,0 +1,197 @@
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.text.NumberFormat;
+import java.util.Locale;
+import java.util.Scanner;
+public class LoadAtm{
+  public static void main(String[] args) throws ClassNotFoundException, SQLException, InterruptedException {
+     Scanner sc=new Scanner(System.in);
+     Class.forName("com.mysql.jdbc.Driver");
+     Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/atm","root","@nisha2303");
+     if(con!=null) {
+System.out.println("Connected");
+ }
+     else{
+ System.out.println("Not Connected");
+}
+     int balance=0;
+     Statement stmt;
+     Result rs;
+     PrepareStatement ps;
+     System.out.println("1.LOAD CASH TO ATM");
+     System.out.println("2.SHOW CUSTOMER DETAILS");
+     System.out.println("3.SHOW ATM OPERATIONS");
+     System.out.println("Enter the choice: ");
+     int ch=sc.nextInt();
+     switch(ch){
+         case 1:
+            stmt=con.createStatement();
+            stmt.executeUpdate("CREATE TABLE Bank (Denomination numeric(4),Number numeric(4),Value numeric(10)");\
+            if(balance==0){
+              System.out.println("ENTER NUMBER OF 2000 NOTES HAS TO BE ADDED");
+              int number1=sc.nextInt();
+              int value1=balance+(2000*number1);
+              stmt.executeUpdate("INSERT INTO BankVALUES(2000,"+number1+","+value1+")");
+              System.out.println("ENTER NUMBER OF 500 NOTES HAS TO BE ADDED");
+              int number2=sc.nextInt();
+              int value2=balance+500*number2;
+              stmt.executeUpdate("INSERT INTO Bank VALUES(500,"+number2+","+value2+")");
+              System.out.println("ENTER NUMBER OF 100 NOTES HAS TO BE ADDED");
+              int number3=sc.nextInt();
+              int value3=balance+100*number3;
+              stmt.executeUpdate("INSERT INTO Bank VALUES(100,"+number3+","+value3+")");
+            }
+            else{
+              System.out.println("ENTER THE DENOMINATION YOU HAVE TO CHANGE");
+              int denomination=sc.nextInt();
+              System.out.println("ENTER THE NUMBER OF DENOMINATION: ");
+              int newnumber=sc.nextInt();
+              int newvalue=balance+denomination*newnumber;
+              stmt.executeUpdate("UPDATE TABLE Bank SET Number="+newnumber+"AND Value="+newvalue+"WHERE Denomination="+denomination");
+             }
+            rs=stmt.executeQuery("SELECT * FROM Bank");
+            while(rs.next()){
+                     System.out.println(rs.getInt(1)+"  "+rs.getInt(2)+"  "+rs.getInt(3));
+                  }
+            break;
+         case 2:
+             stmt=con.createStatement();
+             stmt.executeUpdate("CREATE TABLE customer (Account_No numeric(3),Account_Holder varchar(20),Pin_Number numeric(4),Account_Balance numeric(10))");
+             stmt.executeUpdate("INSERT INTO customer VALUES(101,'Suresh',2343,25234)");
+             stmt.executeUpdate("INSERT INTO customer VALUES(102,'Ganesh',5432,34123)");
+             stmt.executeUpdate("INSERT INTO customer VALUES(103,'Magesh',7854,26100)");
+             stmt.executeUpdate("INSERT INTO customer VALUES(104,'Naresh',2345,80000)");
+             stmt.executeUpdate("INSERT INTO customer VALUES(105,'Harish',1907,103400)");
+             rs=stmt.executeQuery("SELECT * FROM customer");
+             while(rs.next()){
+                   System.out.println(rs.getInt(1)+"  "+rs.getString(2)+"  "+rs.getInt(3)+"  "+rs.getInt(4));
+              }
+             break;
+         case 3:
+               System.out.println("ENTER YOUR ACCOUNT NUMBER : ");
+               int account_number=sc.nextInt();
+               System.out.println("ENTER YOUR PIN NUMBER : ");
+               int pin_number=sc.nextInt();
+               ps=con.prepareStatement("SELECT Pin_Number FROM customer WHERE Account_no=?");
+               ps.setInt(1,account_num);
+               rs=ps.executeQuery();
+               int pin_orginal=0;
+               while(rs.next()){
+                    pin_orginal=rs.getInt(1);
+                }
+               if(pin_number!=pin_orginal){
+                     System.out.println("INVALID ACCOUNT NUMBER OR PIN");
+                     break;
+               }
+               System.out.println("1.CHECK ACCOUNT BALANCE");
+               System.out.println("2.WITHDRAW MONEY");
+               System.out.println("3.TRANSFER MONEY");
+               System.out.println("4.CHECK ATM BALANCE");
+               System.out.println("ENTER YOUR CHOICE : ");
+               int ch1=sc.nextInt();
+               switch(ch1){
+                      case 1:
+                         int current_balance=0;
+                         ps=con.prepareStatement("SELECT Account_Balance FROM customer WHERE Account_no=?");
+                         ps.setInt(1,account_number);
+                         rs=ps.executeQuery();
+                         while(rs.next()){
+                                current_balance=rs.getInt(1);
+                         }
+                         NumberFormat f = NumberFormat.getCurrencyInstance(new Locale("en", "IN"));
+                         String balance = f.format(current_balance);
+                         System.out.println("YOUR ACCOUNT BALANCE : "+balance);
+                         break;
+                      case 2:
+                         System.out.println("ENTER THE AMOUNT : ");
+                         int amount_withdraw=sc.nextInt();
+                         if(amount_withdraw>10000||amount_withdraw<100){
+                                 System.out.println("WITHDRAW IS NOT POSSIBLE!");
+                                 break;
+                         }      
+                         rs = stmt.executeQuery("SELECT Value FROM Bank");
+                         int balance_atm=0;
+                         while(rs.next()){
+                            balance_atm+=rs.getInt(1);
+                         }
+                         if(balance_atm<atm_withdraw){
+                            System.out.println(" FUND IS INSUFFICIENT!");
+                            break;
+                         }
+                         ps=con.executeQuery("SELECT Account_Balance FROM customer WHERE Account_no=?");
+                         ps.setInt(1,account_number);
+                         int customer_balance=0;
+                         rs=ps.executeQuery();
+                         while(rs.next()){
+                               customer_balance=rs.getInt(1);
+                         }
+                         if(amount_withdraw>customer_balance){
+                              System.out.println(" BALANCE IS INSUFFICIENT!");
+                              break;
+                         }                      
+                         System.out.println("*****PROCESSING*****");
+                         customer_balance-=atm_withdraw;
+                         ps=con.prepareStatement("UPDATE customer SET Account_Balance=? WHERE Account_no=?");
+                         ps.setInt(1,customer_balance);
+                         ps.setInt(2,account_number);
+                         ps.execute();
+                         System.out.println(" COLLECT YOUR MONEY!! THANK YOU!!! VISIT AGAIN###");
+                         break;
+                     case 3:
+                         System.out.println(" ENTER THE ACCOUNT NUMBER OF THE RECIVER: ");
+                         int receiver_account=sc.nextInt();
+                         ps=con.prepareStatement("SELECT * FROM customer WHERE Account_no=?");
+                         ps.setInt(1,receiver_account);
+                         rs=ps.executeQuery();
+                         if(!rs.next()){
+                              System.out.println("THERE IS NO ACCOUNT WITH THIS ACCOUNT NUMBER");
+                              break;
+                         }
+                         System.out.println("ENTER THE AMOUNT THAT HAS TO BE TRANSFERED: ");
+                         int transfer_amount=sc.nextInt();
+                         int customer_balance=0;
+                         ps=con.prepareStatement("SELECT Account_Balance FROM customer WHERE Account_no=?");
+                         ps.setInt(1,account_number);
+                         rs=ps.executeQuery();
+                         while(rs.next()){
+                                customer_balance=rs.getInt(1);
+                         }
+                         if(transfer_amount>customer_balance){
+                              System.out.println(" FUND INSUFFICIENT!!!");
+                         }
+                        int after_balance=customer_balance-transfer_amount;
+                        ps= con.prepareStatement("UPDATE customer SET Account_Balance=? WHERE Account_no=?");
+                        ps.setInt(1,after_balance);
+                        ps.setString(2,account_number);
+                        ps.execute();
+                        ps = con.prepareStatement("SELECT Account_Balance FROM customer WHERE Account_no=?");
+                        ps.setString(1, receiver_account);
+                        rs = ps.executeQuery();
+                        int receiver_balance=0;
+                        while(rs.next()){
+                            receiver_balance = rs.getInt(1);
+                        }
+                        receiver_balance+=transfer_amount;
+                        ps= con.prepareStatement("UPDATE customer SET Account_Balance=? WHERE Account_no=?");
+                        ps.setInt(1, receiver_balance);
+                        ps.setString(2, receiver_account);
+                        ps.execute();
+                        System.out.println("TRANSFERED SUCCESSFULLY!!!");
+                        break;
+                    case 4:
+                       rs=stmt.executeQuery("SELECT Value FROM Bank");
+                       while(rs.next()){
+                            System.out.println(rs.getInt(1));
+                          }
+                        break;
+                    default:
+                        System.out.println("PLEASE ENTER A VALID CHOICE");
+                     }
+            default:
+                  System.out.println("PLEASE ENTER A VALID CHOICE");
+                 }
+         }
+}
